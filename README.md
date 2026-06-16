@@ -31,11 +31,26 @@ torizon completions fish > ~/.config/fish/completions/torizon.fish
 ## Authentication
 
 Create an **API client** in the Torizon Cloud web UI to obtain a *client ID*
-and *client secret*, then log in:
+and *client secret*, then log in. The secret is **never** taken as a
+command-line argument (so it never lands in your shell history or the process
+list):
 
 ```bash
-torizon login --client-id <ID> --client-secret <SECRET>
-# or run `torizon login` and enter them interactively
+# Recommended: interactive. The secret is read with no echo.
+torizon login
+#   Client ID: <ID>
+#   Client secret:        (hidden)
+```
+
+For non-interactive use (CI), provide the secret out-of-band — via an
+environment variable or stdin, never as an argument:
+
+```bash
+# Environment variable
+TORIZON_CLIENT_ID=<ID> TORIZON_CLIENT_SECRET=<SECRET> torizon login
+
+# Or pipe the secret on stdin (e.g. from a secrets manager)
+get-secret torizon | torizon login --client-id <ID> --client-secret-stdin
 ```
 
 Credentials are stored in `~/.config/torizon/credentials.toml` (mode `0600` on
@@ -45,7 +60,7 @@ refreshed automatically.
 You can keep several named profiles:
 
 ```bash
-torizon login --profile staging --client-id ... --client-secret ...
+torizon login --profile staging          # prompts securely for staging
 torizon --profile staging devices list
 ```
 
