@@ -10,11 +10,41 @@ use reqwest::blocking::{Client as HttpClient, RequestBuilder};
 use reqwest::Method;
 use serde_json::Value;
 
+use percent_encoding::{utf8_percent_encode, AsciiSet, NON_ALPHANUMERIC};
+
 use crate::auth;
 use crate::config::Profile;
 
 /// How many times to retry after an HTTP 420 (rate limited) response.
 const MAX_RATE_LIMIT_RETRIES: u32 = 5;
+/// Fail fast if a connection cannot be established.
+const CONNECT_TIMEOUT_SECS: u64 = 10;
+/// Bound any single request so a stalled server cannot block forever (this also
+/// lets `updates watch` enforce its own timeout between polls).
+const REQUEST_TIMEOUT_SECS: u64 = 300;
+
+/// Path-segment encoder: keep RFC 3986 "unreserved" characters, percent-encode
+/// everything else (including `/ ? # %` and spaces).
+const PATH_SEGMENT: &AsciiSet = &NON_ALPHANUMERIC
+    .remove(b'-')
+    .remove(b'.')
+    .remove(b'_')
+    .remove(b'~');
+
+/// Percent-encode a user-supplied value for safe interpolation into a URL path.
+pub fn encode_segment(s: &str) -> String {
+    utf8_percent_encode(s, PATH_SEGMENT).to_string()
+}
+
+/// Build the shared blocking HTTP client with sane timeouts.
+pub fn http_client() -> Result<HttpClient> {
+    HttpClient::builder()
+        .user_agent(concat!("torizon-cloud-cli/", env!("CARGO_PKG_VERSION")))
+        .connect_timeout(Duration::from_secs(CONNECT_TIMEOUT_SECS))
+        .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
+        .build()
+        .context("building HTTP client")
+}
 
 pub struct ApiClient {
     http: HttpClient,
@@ -29,10 +59,7 @@ pub type Query<'a> = &'a [(&'a str, String)];
 impl ApiClient {
     /// Build a client and acquire an access token up front.
     pub fn new(profile: Profile) -> Result<Self> {
-        let http = HttpClient::builder()
-            .user_agent(concat!("torizon-cloud-cli/", env!("CARGO_PKG_VERSION")))
-            .build()
-            .context("building HTTP client")?;
+        let http = http_client()?;
         let token = auth::access_token(&http, &profile)?;
         Ok(Self {
             http,
@@ -163,5 +190,30 @@ impl ApiClient {
                 )
                 .body(body.clone())
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::encode_segment;
+
+    #[test]
+    fn encodes_reserved_path_chars() {
+        // Reserved / unsafe characters must be percent-encoded.
+        assert_eq!(encode_segment("a/b"), "a%2Fb");
+        assert_eq!(encode_segment("a?b#c"), "a%3Fb%23c");
+        assert_eq!(encode_segment("a b"), "a%20b");
+        assert_eq!(encode_segment("a%b"), "a%25b");
+    }
+
+    #[test]
+    fn leaves_unreserved_chars_intact() {
+        let uuid = "df8c1dc2-80bb-4cf1-9576-cdf0df0e475e";
+        assert_eq!(encode_segment(uuid), uuid);
+        assert_eq!(
+            encode_segment("astra-os-20260615-04"),
+            "astra-os-20260615-04"
+        );
+        assert_eq!(encode_segment("a.b_c~d"), "a.b_c~d");
     }
 }

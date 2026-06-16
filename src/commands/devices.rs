@@ -7,7 +7,7 @@ use clap::{Args, Subcommand};
 use serde_json::{json, Map, Value};
 
 use super::Ctx;
-use crate::client::ApiClient;
+use crate::client::{encode_segment as enc, ApiClient};
 use crate::output::{self, Format};
 
 #[derive(Debug, Subcommand)]
@@ -112,29 +112,33 @@ pub fn run(ctx: &Ctx, cmd: DevicesCmd) -> Result<()> {
         DevicesCmd::Get { device_uuid } => {
             output::print_object(
                 ctx.format,
-                &client.get(&format!("/devices/{device_uuid}"), &[])?,
+                &client.get(&format!("/devices/{}", enc(&device_uuid)), &[])?,
             );
             Ok(())
         }
         DevicesCmd::Assignment { device_uuid } => {
-            output::print_json(
-                &client.get(&format!("/devices/uptane/{device_uuid}/assignment"), &[])?,
-            );
+            output::print_json(&client.get(
+                &format!("/devices/uptane/{}/assignment", enc(&device_uuid)),
+                &[],
+            )?);
             Ok(())
         }
         DevicesCmd::Components { device_uuid } => {
-            output::print_json(
-                &client.get(&format!("/devices/uptane/{device_uuid}/components"), &[])?,
-            );
+            output::print_json(&client.get(
+                &format!("/devices/uptane/{}/components", enc(&device_uuid)),
+                &[],
+            )?);
             Ok(())
         }
         DevicesCmd::Packages { device_uuid } => {
-            output::print_json(&client.get(&format!("/devices/packages/{device_uuid}"), &[])?);
+            output::print_json(
+                &client.get(&format!("/devices/packages/{}", enc(&device_uuid)), &[])?,
+            );
             Ok(())
         }
         DevicesCmd::Network { device_uuid } => {
             let path = match device_uuid {
-                Some(u) => format!("/devices/network/{u}"),
+                Some(u) => format!("/devices/network/{}", enc(&u)),
                 None => "/devices/network".to_string(),
             };
             output::print_json(&client.get(&path, &[])?);
@@ -143,7 +147,7 @@ pub fn run(ctx: &Ctx, cmd: DevicesCmd) -> Result<()> {
         DevicesCmd::Name { device_uuid, set } => match set {
             Some(name) => {
                 client.put_json(
-                    &format!("/devices/name/{device_uuid}"),
+                    &format!("/devices/name/{}", enc(&device_uuid)),
                     &json!({ "name": name }),
                 )?;
                 output::report_status(
@@ -154,14 +158,16 @@ pub fn run(ctx: &Ctx, cmd: DevicesCmd) -> Result<()> {
                 Ok(())
             }
             None => {
-                output::print_json(&client.get(&format!("/devices/name/{device_uuid}"), &[])?);
+                output::print_json(
+                    &client.get(&format!("/devices/name/{}", enc(&device_uuid)), &[])?,
+                );
                 Ok(())
             }
         },
         DevicesCmd::Notes { device_uuid, set } => match set {
             Some(notes) => {
                 client.put_json(
-                    &format!("/devices/notes/{device_uuid}"),
+                    &format!("/devices/notes/{}", enc(&device_uuid)),
                     &json!({ "notes": notes }),
                 )?;
                 output::report_status(
@@ -172,12 +178,14 @@ pub fn run(ctx: &Ctx, cmd: DevicesCmd) -> Result<()> {
                 Ok(())
             }
             None => {
-                output::print_json(&client.get(&format!("/devices/notes/{device_uuid}"), &[])?);
+                output::print_json(
+                    &client.get(&format!("/devices/notes/{}", enc(&device_uuid)), &[])?,
+                );
                 Ok(())
             }
         },
         DevicesCmd::Tags { device_uuid } => {
-            output::print_json(&client.get(&format!("/devices/tags/{device_uuid}"), &[])?);
+            output::print_json(&client.get(&format!("/devices/tags/{}", enc(&device_uuid)), &[])?);
             Ok(())
         }
         DevicesCmd::SetTags { device_uuid, tags } => {
@@ -185,7 +193,10 @@ pub fn run(ctx: &Ctx, cmd: DevicesCmd) -> Result<()> {
             for (k, v) in tags {
                 map.insert(k, json!(v));
             }
-            client.patch_json(&format!("/devices/tags/{device_uuid}"), &Value::Object(map))?;
+            client.patch_json(
+                &format!("/devices/tags/{}", enc(&device_uuid)),
+                &Value::Object(map),
+            )?;
             output::report_status(
                 ctx.format,
                 "Tags updated.",
@@ -203,7 +214,7 @@ pub fn run(ctx: &Ctx, cmd: DevicesCmd) -> Result<()> {
             }
             let status = on; // --on => hibernate(true), --off => false
             client.put_json(
-                &format!("/devices/hibernation/{device_uuid}"),
+                &format!("/devices/hibernation/{}", enc(&device_uuid)),
                 &json!({ "status": status }),
             )?;
             output::report_status(
@@ -219,7 +230,7 @@ pub fn run(ctx: &Ctx, cmd: DevicesCmd) -> Result<()> {
                 println!("Aborted.");
                 return Ok(());
             }
-            client.delete(&format!("/devices/{device_uuid}"))?;
+            client.delete(&format!("/devices/{}", enc(&device_uuid)))?;
             output::report_status(
                 ctx.format,
                 &format!("Device {device_uuid} deleted."),

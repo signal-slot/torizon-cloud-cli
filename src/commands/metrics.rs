@@ -5,7 +5,7 @@ use clap::{Args, Subcommand};
 use serde_json::json;
 
 use super::Ctx;
-use crate::client::ApiClient;
+use crate::client::{encode_segment as enc, ApiClient};
 use crate::output::{self, Format};
 
 #[derive(Debug, Subcommand)]
@@ -80,7 +80,7 @@ pub fn run(ctx: &Ctx, cmd: MetricsCmd) -> Result<()> {
         MetricsCmd::Names => names(ctx, &client),
         MetricsCmd::Device { device_uuid, range } => {
             output::print_json(&client.get(
-                &format!("/device-data/devices/{device_uuid}/metrics"),
+                &format!("/device-data/devices/{}/metrics", enc(&device_uuid)),
                 &range.to_query(),
             )?);
             Ok(())
@@ -94,14 +94,17 @@ pub fn run(ctx: &Ctx, cmd: MetricsCmd) -> Result<()> {
                 q.push(("metrics", m.clone()));
             }
             output::print_json(&client.get(
-                &format!("/device-data/devices/{device_uuid}/detailed-metrics"),
+                &format!(
+                    "/device-data/devices/{}/detailed-metrics",
+                    enc(&device_uuid)
+                ),
                 &q,
             )?);
             Ok(())
         }
         MetricsCmd::Fleet { fleet_id, range } => {
             output::print_json(&client.get(
-                &format!("/device-data/fleets/{fleet_id}/metrics"),
+                &format!("/device-data/fleets/{}/metrics", enc(&fleet_id)),
                 &range.to_query(),
             )?);
             Ok(())
@@ -109,7 +112,7 @@ pub fn run(ctx: &Ctx, cmd: MetricsCmd) -> Result<()> {
         MetricsCmd::Outliers { fleet_id, range } => {
             let body = json!({ "metrics": range.metrics, "from": range.from, "to": range.to });
             output::print_json(&client.post_json(
-                &format!("/device-data/fleets/{fleet_id}/metrics/outliers"),
+                &format!("/device-data/fleets/{}/metrics/outliers", enc(&fleet_id)),
                 &body,
             )?);
             Ok(())
@@ -117,7 +120,7 @@ pub fn run(ctx: &Ctx, cmd: MetricsCmd) -> Result<()> {
         MetricsCmd::Report { fleet_id, range } => {
             let body = json!({ "metrics": range.metrics, "from": range.from, "to": range.to });
             output::print_json(&client.post_json(
-                &format!("/device-data/fleets/{fleet_id}/metrics/report"),
+                &format!("/device-data/fleets/{}/metrics/report", enc(&fleet_id)),
                 &body,
             )?);
             Ok(())

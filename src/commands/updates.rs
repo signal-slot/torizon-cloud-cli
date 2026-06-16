@@ -8,7 +8,7 @@ use clap::{Args, Subcommand};
 use serde_json::{json, Value};
 
 use super::Ctx;
-use crate::client::ApiClient;
+use crate::client::{encode_segment as enc, ApiClient};
 use crate::output::{self, Format};
 
 #[derive(Debug, Subcommand)]
@@ -64,7 +64,7 @@ pub fn run(ctx: &Ctx, cmd: UpdatesCmd) -> Result<()> {
     match cmd {
         UpdatesCmd::Launch(args) => launch(ctx, &client, args),
         UpdatesCmd::Cancel { update_id } => {
-            client.patch(&format!("/updates/{update_id}"), &[])?;
+            client.patch(&format!("/updates/{}", enc(&update_id)), &[])?;
             output::report_status(
                 ctx.format,
                 &format!("Update {update_id} cancelled."),
@@ -102,7 +102,7 @@ fn launch(ctx: &Ctx, client: &ApiClient, args: LaunchArgs) -> Result<()> {
 }
 
 fn list(ctx: &Ctx, client: &ApiClient, device_uuid: &str) -> Result<()> {
-    let resp = client.get(&format!("/updates/devices/{device_uuid}"), &[])?;
+    let resp = client.get(&format!("/updates/devices/{}", enc(device_uuid)), &[])?;
     match ctx.format {
         Format::Json => output::print_json(&resp),
         Format::Human => {
@@ -161,7 +161,7 @@ fn flatten_update(u: &Value) -> Value {
 }
 
 fn latest_update(client: &ApiClient, device_uuid: &str) -> Result<Option<Value>> {
-    let resp = client.get(&format!("/updates/devices/{device_uuid}"), &[])?;
+    let resp = client.get(&format!("/updates/devices/{}", enc(device_uuid)), &[])?;
     let mut vals = output::paginated_values(&resp);
     vals.sort_by(|a, b| {
         a.get("createdAt")
@@ -175,7 +175,7 @@ fn watch(client: &ApiClient, args: WatchArgs) -> Result<()> {
     let start = Instant::now();
     let timeout = Duration::from_secs(args.timeout);
     loop {
-        let dev = client.get(&format!("/devices/{}", args.device_uuid), &[])?;
+        let dev = client.get(&format!("/devices/{}", enc(&args.device_uuid)), &[])?;
         let dev_status = dev
             .get("deviceStatus")
             .and_then(Value::as_str)

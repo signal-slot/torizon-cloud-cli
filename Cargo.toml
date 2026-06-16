@@ -1,6 +1,6 @@
 [package]
 name = "torizon-cloud-cli"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 rust-version = "1.74"
 description = "Unofficial command-line interface for the Torizon Cloud (Torizon OTA v2) API"
@@ -28,3 +28,4 @@ anyhow = "1"
 dirs = "5"
 clap_complete = "4.6.5"
 rpassword = "7.4.0"
+percent-encoding = "2"

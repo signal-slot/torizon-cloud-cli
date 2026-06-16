@@ -7,6 +7,10 @@ use anyhow::{Context, Result};
 use clap::{Args, Subcommand, ValueEnum};
 use serde_json::{json, Map, Value};
 
+use super::Ctx;
+use crate::client::{encode_segment as enc, ApiClient};
+use crate::output::{self, Format};
+
 /// Package sort field (maps to the API's exact enum values).
 #[derive(Debug, Clone, Copy, ValueEnum)]
 pub enum SortBy {
@@ -37,10 +41,6 @@ impl SortDir {
         }
     }
 }
-
-use super::Ctx;
-use crate::client::ApiClient;
-use crate::output::{self, Format};
 
 #[derive(Debug, Subcommand)]
 pub enum PackagesCmd {
@@ -134,7 +134,7 @@ pub fn run(ctx: &Ctx, cmd: PackagesCmd) -> Result<()> {
     match cmd {
         PackagesCmd::List(args) => list(ctx, &client, args),
         PackagesCmd::Get { package_id } => {
-            let v = client.get(&format!("/packages/{package_id}"), &[])?;
+            let v = client.get(&format!("/packages/{}", enc(&package_id)), &[])?;
             output::print_object(ctx.format, &v);
             Ok(())
         }
@@ -234,7 +234,7 @@ fn edit(ctx: &Ctx, client: &ApiClient, args: EditArgs) -> Result<()> {
         anyhow::bail!("nothing to edit; pass --comment and/or --hardware-id");
     }
     let resp = client.patch_json(
-        &format!("/packages/{}", args.package_id),
+        &format!("/packages/{}", enc(&args.package_id)),
         &Value::Object(body),
     )?;
     output::report_data(ctx.format, "Package updated.", &resp);
@@ -246,7 +246,7 @@ fn delete(ctx: &Ctx, client: &ApiClient, args: DeleteArgs) -> Result<()> {
         println!("Aborted.");
         return Ok(());
     }
-    client.delete(&format!("/packages/{}", args.package_id))?;
+    client.delete(&format!("/packages/{}", enc(&args.package_id)))?;
     output::report_status(
         ctx.format,
         &format!("Package {} deleted.", args.package_id),

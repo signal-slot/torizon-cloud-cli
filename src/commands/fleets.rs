@@ -7,7 +7,7 @@ use clap::{Args, Subcommand, ValueEnum};
 use serde_json::json;
 
 use super::Ctx;
-use crate::client::ApiClient;
+use crate::client::{encode_segment as enc, ApiClient};
 use crate::output::{self, Format};
 
 #[derive(Debug, Subcommand)]
@@ -94,7 +94,7 @@ pub fn run(ctx: &Ctx, cmd: FleetsCmd) -> Result<()> {
     match cmd {
         FleetsCmd::List(args) => list(ctx, &client, args),
         FleetsCmd::Get { fleet_id } => {
-            let v = client.get(&format!("/fleets/{fleet_id}"), &[])?;
+            let v = client.get(&format!("/fleets/{}", enc(&fleet_id)), &[])?;
             output::print_json(&v);
             Ok(())
         }
@@ -104,7 +104,7 @@ pub fn run(ctx: &Ctx, cmd: FleetsCmd) -> Result<()> {
                 println!("Aborted.");
                 return Ok(());
             }
-            client.delete(&format!("/fleets/{fleet_id}"))?;
+            client.delete(&format!("/fleets/{}", enc(&fleet_id)))?;
             output::report_status(
                 ctx.format,
                 &format!("Fleet {fleet_id} deleted."),
@@ -114,7 +114,10 @@ pub fn run(ctx: &Ctx, cmd: FleetsCmd) -> Result<()> {
         }
         FleetsCmd::Devices { fleet_id } => devices(ctx, &client, &fleet_id),
         FleetsCmd::AddDevices { fleet_id, devices } => {
-            client.post_json(&format!("/fleets/{fleet_id}/devices"), &json!(devices))?;
+            client.post_json(
+                &format!("/fleets/{}/devices", enc(&fleet_id)),
+                &json!(devices),
+            )?;
             output::report_status(
                 ctx.format,
                 &format!("Added {} device(s) to fleet {fleet_id}.", devices.len()),
@@ -136,7 +139,10 @@ pub fn run(ctx: &Ctx, cmd: FleetsCmd) -> Result<()> {
                 println!("Aborted.");
                 return Ok(());
             }
-            client.delete_json(&format!("/fleets/{fleet_id}/devices"), &json!(devices))?;
+            client.delete_json(
+                &format!("/fleets/{}/devices", enc(&fleet_id)),
+                &json!(devices),
+            )?;
             output::report_status(
                 ctx.format,
                 &format!("Removed {} device(s) from fleet {fleet_id}.", devices.len()),
@@ -186,7 +192,7 @@ fn create(ctx: &Ctx, client: &ApiClient, args: CreateArgs) -> Result<()> {
 }
 
 fn devices(ctx: &Ctx, client: &ApiClient, fleet_id: &str) -> Result<()> {
-    let resp = client.get(&format!("/fleets/{fleet_id}/devices"), &[])?;
+    let resp = client.get(&format!("/fleets/{}/devices", enc(fleet_id)), &[])?;
     match ctx.format {
         Format::Json => output::print_json(&resp),
         Format::Human => output::print_table(

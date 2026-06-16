@@ -80,6 +80,16 @@ pub fn access_token(client: &reqwest::blocking::Client, profile: &Profile) -> Re
     Ok(token)
 }
 
+/// Drop any cached token for `client_id`. Call this after credentials change
+/// (e.g. `torizon login`) so a rotated secret does not keep reusing a token
+/// minted under the previous secret.
+pub fn invalidate(client_id: &str) {
+    let mut cache = load_cache();
+    if cache.remove(client_id).is_some() {
+        let _ = store_cache(&cache);
+    }
+}
+
 /// Perform the `client_credentials` grant. Returns the access token together
 /// with its lifetime in seconds. Used both by [`access_token`] and by
 /// `torizon login` to verify credentials.

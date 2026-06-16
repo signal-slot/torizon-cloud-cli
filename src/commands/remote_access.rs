@@ -8,6 +8,7 @@ use clap::Subcommand;
 use serde_json::json;
 
 use super::Ctx;
+use crate::client::encode_segment as enc;
 use crate::output;
 
 #[derive(Debug, Subcommand)]
@@ -56,12 +57,14 @@ pub fn run(ctx: &Ctx, cmd: RemoteAccessCmd) -> Result<()> {
     let client = ctx.client()?;
     match cmd {
         RemoteAccessCmd::Device { device_uuid } => {
-            output::print_json(&client.get(&format!("/remote-access/device/{device_uuid}"), &[])?);
+            output::print_json(
+                &client.get(&format!("/remote-access/device/{}", enc(&device_uuid)), &[])?,
+            );
             Ok(())
         }
         RemoteAccessCmd::Sessions { device_uuid } => {
             output::print_json(&client.get(
-                &format!("/remote-access/device/{device_uuid}/sessions"),
+                &format!("/remote-access/device/{}/sessions", enc(&device_uuid)),
                 &[],
             )?);
             Ok(())
@@ -73,7 +76,7 @@ pub fn run(ctx: &Ctx, cmd: RemoteAccessCmd) -> Result<()> {
         } => {
             let body = json!({ "publicKeys": public_keys, "sessionDuration": duration });
             let resp = client.post_json(
-                &format!("/remote-access/device/{device_uuid}/sessions"),
+                &format!("/remote-access/device/{}/sessions", enc(&device_uuid)),
                 &body,
             )?;
             output::report_data(ctx.format, "Session created.", &resp);
@@ -84,7 +87,10 @@ pub fn run(ctx: &Ctx, cmd: RemoteAccessCmd) -> Result<()> {
                 println!("Aborted.");
                 return Ok(());
             }
-            client.delete(&format!("/remote-access/device/{device_uuid}/sessions"))?;
+            client.delete(&format!(
+                "/remote-access/device/{}/sessions",
+                enc(&device_uuid)
+            ))?;
             output::report_status(
                 ctx.format,
                 "Session deleted.",
@@ -109,7 +115,7 @@ pub fn run(ctx: &Ctx, cmd: RemoteAccessCmd) -> Result<()> {
             Ok(())
         }
         RemoteAccessCmd::RemoveKey { key_id } => {
-            client.delete(&format!("/remote-access/user/public-keys/{key_id}"))?;
+            client.delete(&format!("/remote-access/user/public-keys/{}", enc(&key_id)))?;
             output::report_status(
                 ctx.format,
                 &format!("Key {key_id} removed."),
@@ -128,7 +134,7 @@ pub fn run(ctx: &Ctx, cmd: RemoteAccessCmd) -> Result<()> {
             Ok(())
         }
         RemoteAccessCmd::RemoveIp { ip } => {
-            client.delete(&format!("/remote-access/user/ip-accept-list/{ip}"))?;
+            client.delete(&format!("/remote-access/user/ip-accept-list/{}", enc(&ip)))?;
             output::report_status(
                 ctx.format,
                 &format!("IP {ip} removed."),

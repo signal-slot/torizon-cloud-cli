@@ -11,6 +11,7 @@ use anyhow::{Context, Result};
 use clap::Args;
 
 use crate::auth;
+use crate::client;
 use crate::config::{Config, Profile};
 
 const SECRET_ENV: &str = "TORIZON_CLIENT_SECRET";
@@ -52,11 +53,11 @@ pub fn run(args: LoginArgs) -> Result<()> {
     };
 
     // Verify the credentials before persisting them.
-    let http = reqwest::blocking::Client::builder()
-        .user_agent(concat!("torizon-cloud-cli/", env!("CARGO_PKG_VERSION")))
-        .build()
-        .context("building HTTP client")?;
+    let http = client::http_client()?;
     auth::request_token(&http, &profile).context("verifying credentials")?;
+
+    // Drop any token cached under the previous secret for this client ID.
+    auth::invalidate(&profile.client_id);
 
     let mut config = Config::load()?;
     config.profiles.insert(args.profile.clone(), profile);

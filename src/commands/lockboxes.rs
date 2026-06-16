@@ -7,6 +7,7 @@ use clap::{Args, Subcommand};
 use serde_json::json;
 
 use super::Ctx;
+use crate::client::encode_segment as enc;
 use crate::output::{self, Format};
 
 #[derive(Debug, Subcommand)]
@@ -62,7 +63,7 @@ pub fn run(ctx: &Ctx, cmd: LockboxesCmd) -> Result<()> {
             Ok(())
         }
         LockboxesCmd::Get { name } => {
-            output::print_json(&client.get(&format!("/lockboxes/{name}"), &[])?);
+            output::print_json(&client.get(&format!("/lockboxes/{}", enc(&name)), &[])?);
             Ok(())
         }
         LockboxesCmd::Set(args) => {
@@ -70,7 +71,7 @@ pub fn run(ctx: &Ctx, cmd: LockboxesCmd) -> Result<()> {
             if let Some(e) = args.expires_at {
                 body["expiresAt"] = json!(e);
             }
-            let resp = client.post_json(&format!("/lockboxes/{}", args.name), &body)?;
+            let resp = client.post_json(&format!("/lockboxes/{}", enc(&args.name)), &body)?;
             output::report_data(
                 ctx.format,
                 &format!("Lockbox `{}` saved.", args.name),
@@ -83,7 +84,7 @@ pub fn run(ctx: &Ctx, cmd: LockboxesCmd) -> Result<()> {
                 println!("Aborted.");
                 return Ok(());
             }
-            client.delete(&format!("/lockboxes/{name}"))?;
+            client.delete(&format!("/lockboxes/{}", enc(&name)))?;
             output::report_status(
                 ctx.format,
                 &format!("Lockbox {name} deleted."),
