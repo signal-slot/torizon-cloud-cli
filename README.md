@@ -42,20 +42,21 @@ torizon login
 #   Client secret:        (hidden)
 ```
 
-For non-interactive use (CI), provide the secret out-of-band — via an
-environment variable or stdin, never as an argument:
+For non-interactive use (CI, automation, coding agents), set the credentials in
+environment variables. No `torizon login` is needed — every command picks them
+up directly:
 
 ```bash
-# Environment variable
-TORIZON_CLIENT_ID=<ID> TORIZON_CLIENT_SECRET=<SECRET> torizon login
-
-# Or pipe the secret on stdin (e.g. from a secrets manager)
-get-secret torizon | torizon login --client-id <ID> --client-secret-stdin
+export TORIZON_CLIENT_ID=<ID>
+export TORIZON_CLIENT_SECRET=<SECRET>
+torizon devices list
 ```
 
-Credentials are stored in `~/.config/torizon/credentials.toml` (mode `0600` on
-Unix). Access tokens are cached in `~/.config/torizon/token-cache.json` and
-refreshed automatically.
+Interactive credentials are stored in `~/.config/torizon/credentials.toml`
+(mode `0600` on Unix). Access tokens are cached in
+`~/.config/torizon/token-cache.json` and refreshed automatically. Resolution
+order: `--profile` (file) first, otherwise the environment variables, otherwise
+the default profile in the file.
 
 You can keep several named profiles:
 
