@@ -1,5 +1,9 @@
 # torizon-cloud-cli
 
+[![crates.io](https://img.shields.io/crates/v/torizon-cloud-cli.svg)](https://crates.io/crates/torizon-cloud-cli)
+[![CI](https://github.com/signal-slot/torizon-cloud-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/signal-slot/torizon-cloud-cli/actions/workflows/ci.yml)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 Unofficial command-line interface for the [Torizon Cloud](https://www.toradex.com/torizon)
 (Torizon OTA v2) API. It wraps the REST API at `https://app.torizon.io/api/v2`
 with OAuth2 `client_credentials` authentication.
