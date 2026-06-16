@@ -1,0 +1,29 @@
+[package]
+name = "torizon-cloud-cli"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.74"
+description = "Unofficial command-line interface for the Torizon Cloud (Torizon OTA v2) API"
+license = "MIT"
+authors = ["Tasuku Suzuki <tasuku.suzuki@signal-slot.co.jp>"]
+repository = "https://github.com/signal-slot/torizon-cloud-cli"
+homepage = "https://github.com/signal-slot/torizon-cloud-cli"
+documentation = "https://github.com/signal-slot/torizon-cloud-cli"
+readme = "README.md"
+keywords = ["torizon", "toradex", "ota", "iot", "cli"]
+categories = ["command-line-utilities"]
+exclude = [".github/", "/.target/"]
+
+[[bin]]
+name = "torizon"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4", features = ["derive", "env"] }
+reqwest = { version = "0.12", features = ["blocking", "json", "rustls-tls"], default-features = false }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+anyhow = "1"
+dirs = "5"
+clap_complete = "4.6.5"
